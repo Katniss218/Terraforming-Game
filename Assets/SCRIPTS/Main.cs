@@ -5,6 +5,22 @@ namespace TerraformingGame
 {
     public class Main : MonoBehaviour
     {
+        [SerializeField] private RectTransform _UILayerPanel = null;
+
+        private static RectTransform ___UILayerPanel = null;
+
+        public static RectTransform UILayerPanel
+        {
+            get
+            {
+                if( ___UILayerPanel == null )
+                {
+                    ___UILayerPanel = FindObjectOfType<Main>()._UILayerPanel;
+                }
+                return ___UILayerPanel;
+            }
+        }
+
         // Start is called before the first frame update
         void Start()
         {
