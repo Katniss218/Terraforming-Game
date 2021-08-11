@@ -28,6 +28,11 @@ namespace TerraformingGame
             this.resources = new List<CelestialBodyResource>();
         }
 
+        public CelestialBodyResource[] GetResources()
+        {
+            return this.resources.ToArray();
+        }
+
 
         public float AddResource( ResourceType type, float amount )
         {

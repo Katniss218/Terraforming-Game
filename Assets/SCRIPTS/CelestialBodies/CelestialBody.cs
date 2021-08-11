@@ -12,6 +12,10 @@ namespace TerraformingGame
 
         public CelestialBodyLayer atmosphereLayer; // distinct layer due to vast differences in behaviour.
 
+        public Transform graphicsTransform = null;
+
+        public new SphereCollider collider = null;
+
         public CelestialBodyLayer surfaceLayer
         {
             get
@@ -52,6 +56,28 @@ namespace TerraformingGame
         /// </summary>
         public Inventory inventory;
 
+        public float temperature { get; private set; }
+
+        public void SetTemperature( float temperature )
+        {
+            if( temperature < 0 )
+            {
+                Debug.LogWarning( "Tried setting temperature to below absolute 0" );
+                return;
+            }
+
+            this.temperature = temperature;
+
+            MeshRenderer meshRenderer = this.graphicsTransform.gameObject.GetComponent<MeshRenderer>();
+            meshRenderer.material.SetColor( "_EmissionColor", Main.GetBlackbody( this.temperature ) );
+
+            Light light = this.GetComponent<Light>();
+            if( light != null )
+            {
+                light.color = Main.GetBlackbody( this.temperature );
+            }
+        }
+
         // gravity (calculated from mass and radius)
         // radius (calculated from layers)
         // mass (calculated from layers)
@@ -71,7 +97,6 @@ namespace TerraformingGame
 
         public void DepositResource( InventoryResource resource, int layer )
         {
-            Debug.Log( this.groundLayers.Count );
             float amtDeposited = this.groundLayers[layer].AddResource( resource.type, resource.amount );
             this.inventory.RemoveResource( resource.type, amtDeposited );
         }
@@ -143,5 +168,7 @@ namespace TerraformingGame
         // when does a layer become its own thing?
         // A layer that's liquid can become its own layer if the resource is at least 10% of the layer.
         // so a layer that contains 15% liquid water and 85% liquid silicates will split into layer of water and layer of silicates
+
+        //for a layer to be molten, over 75% of its bulk must be in a liquid state.
     }
 }
