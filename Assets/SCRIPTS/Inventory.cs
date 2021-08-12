@@ -35,7 +35,7 @@ namespace TerraformingGame
             onInventoryChanged?.Invoke();
         }
 
-        public void AddResource( ResourceType type, float amount )
+        public void AddResource( ResourceType type, double amount )
         {
             // try to increase existing resources
             for( int i = 0; i < resources.Count; i++ )
@@ -54,7 +54,7 @@ namespace TerraformingGame
             onInventoryChanged?.Invoke();
         }
 
-        public void RemoveResource( ResourceType type, float amount )
+        public void RemoveResource( ResourceType type, double amount )
         {
             for( int i = 0; i < resources.Count; i++ )
             {

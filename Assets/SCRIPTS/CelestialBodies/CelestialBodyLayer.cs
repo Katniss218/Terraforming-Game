@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -34,10 +34,10 @@ namespace TerraformingGame
         }
 
 
-        public float AddResource( ResourceType type, float amount )
+        public double AddResource( ResourceType type, double amount )
         {
             // returns amount added
-            float amountAdded = amount;
+            double amountAdded = amount;
             for( int i = 0; i < this.resources.Count; i++ )
             {
                 if( this.resources[i].type != type )
@@ -54,10 +54,10 @@ namespace TerraformingGame
             return amountAdded;
         }
 
-        public float RemoveResource( ResourceType type, float amount )
+        public double RemoveResource( ResourceType type, double amount )
         {
             // returns amount removed
-            float amountRemoved = 0;
+            double amountRemoved = 0;
             for( int i = 0; i < this.resources.Count; i++ )
             {
                 if( this.resources[i].type != type )
@@ -86,16 +86,16 @@ namespace TerraformingGame
             return amountRemoved;
         }
 
-        public float GetDepth( float depthOfAllLayersBelow )
+        public double GetDepth( double depthOfAllLayersBelow )
         {
             // returns depth given the depth of all the layers underneath (sphere model).
 
-            return (Mathf.Pow( depthOfAllLayersBelow * depthOfAllLayersBelow + this.GetVolume(), 1.0f / 3.0f ) - depthOfAllLayersBelow) / 2.0f;
+            return (Math.Pow( depthOfAllLayersBelow * depthOfAllLayersBelow + this.GetVolume(), 1.0 / 3.0 ) - depthOfAllLayersBelow) / 2.0; // divide by 2.0 to get radius from diameter
         }
 
-        public float GetVolume()
+        public double GetVolume()
         {
-            float acc = 0.0f;
+            double acc = 0.0f;
             for( int i = 0; i < this.resources.Count; i++ )
             {
                 acc += this.resources[i].amount;
@@ -103,9 +103,9 @@ namespace TerraformingGame
             return acc;
         }
 
-        public float GetMass()
+        public double GetMass()
         {
-            float acc = 0.0f;
+            double acc = 0.0f;
             for( int i = 0; i < this.resources.Count; i++ )
             {
                 acc += this.resources[i].amount * this.resources[i].density;

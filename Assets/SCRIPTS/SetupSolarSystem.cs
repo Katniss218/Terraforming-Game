@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using TerraformingGame.UI;
 using UnityEngine;
 
@@ -37,8 +38,8 @@ namespace TerraformingGame
         {
             Light light = body.gameObject.AddComponent<Light>();
             light.type = LightType.Point;
-            light.range = body.GetMass() / 500000f;
-            light.intensity = body.GetMass() / 500000000f;
+            light.range = (float)(body.GetMass() / 25000000000000000000000000000.0);
+            light.intensity = (float)(body.GetMass() / 500000000000000000000000000000.0);
 
             MeshRenderer meshRenderer = body.graphicsTransform.gameObject.GetComponent<MeshRenderer>();
             meshRenderer.material = starMaterial;
@@ -63,10 +64,10 @@ namespace TerraformingGame
 
             TrailRenderer trail = gfx.AddComponent<TrailRenderer>();
             trail.material = SetupSolarSystem.instance.planetTrailMaterial;
-            trail.time = 1500;
+            trail.time = 15;
             trail.receiveShadows = false;
 
-            Keyframe start = new Keyframe( 0.0f, 3.0f );
+            Keyframe start = new Keyframe( 0.0f, 0.5f );
             Keyframe end = new Keyframe( 1.0f, 0.0f );
 
             AnimationCurve newWidthCurve = new AnimationCurve( start, end );
@@ -100,10 +101,10 @@ namespace TerraformingGame
 
             TrailRenderer trail = gfx.AddComponent<TrailRenderer>();
             trail.material = SetupSolarSystem.instance.shipmentTrailMaterial;
-            trail.time = 500;
+            trail.time = 20;
             trail.receiveShadows = false;
 
-            Keyframe start = new Keyframe( 0.0f, 3.0f );
+            Keyframe start = new Keyframe( 0.0f, 0.25f );
             Keyframe end = new Keyframe( 1.0f, 0.0f );
 
             AnimationCurve newWidthCurve = new AnimationCurve( start, end );
@@ -121,54 +122,65 @@ namespace TerraformingGame
             shipment.inventory.AddResource( ResourceType.Iron, 5 );
         }
 
+        private double RadiusToVolume( double radius )
+        {
+            return (4.0 / 3.0) * Math.PI * (radius*radius*radius);
+        }
+
         private void GenerateSolarSystem()
         {
-            Main.bodies = new CelestialBody[Random.Range( 4, 9 ) + 1];
+            Main.bodies = new CelestialBody[UnityEngine.Random.Range( 4, 9 ) + 1];
+           // Main.bodies = new CelestialBody[2];
             RenderTexture[] texs = new RenderTexture[Main.bodies.Length];
 
 
             CelestialBody sun = SpawnCelestialBody( "Sun" );
 
+            sun.SetTemperature( 5000 );
+           // sun.DepositResource( new InventoryResource() { type = ResourceType.Water, amount = 1000000.0 }, 0 );
+            sun.DepositResource( new InventoryResource() { type = ResourceType.Water, amount = Main.MASS_SUN / ResourceType.Water.GetDensity() }, 0 );
 
-            sun.transform.position = new Vector3( 5, 5 );
-            sun.SetTemperature( 3000 );
-            sun.DepositResource( new InventoryResource() { type = ResourceType.Water, amount = 1000000f }, 0 );
-            float scale = sun.GetRadius();
-            sun.graphicsTransform.localScale = new Vector3( scale * 2, scale * 2, scale * 2 );
-            sun.collider.radius = scale + 4;
+            float radius = Main.ToDisplayRadius( sun.GetRadius() );
+            sun.graphicsTransform.localScale = new Vector3( radius * 2, radius * 2, radius * 2 );
+            sun.collider.radius = radius + 0.5f;
 
             MakeStar( sun );
 
-            Debug.Log( "sun: " + sun.GetRadius() );
-
-
             Main.bodies[0] = sun;
 
-            float lastPlanetSma = sun.GetRadius() * Random.Range( 1.5f, 2.5f );
+            double lastPlanetSma = Main.AU * UnityEngine.Random.Range( 0.3f, 0.7f );
 
             // planets
             for( int i = 1; i < Main.bodies.Length; i++ )
             {
                 Main.bodies[i] = SpawnCelestialBody( "Planet " + i );
-                Main.bodies[i].parentBody = sun;
                 Main.bodies[i].SetOrbit( sun, lastPlanetSma, 0 );
                 Debug.Log( "planet: " + lastPlanetSma );
-                lastPlanetSma += Random.Range( 50.0f, 100.0f );
+                lastPlanetSma *= UnityEngine.Random.Range( 1.2f, 1.85f );
 
 
-                float size = Random.Range( 500.0f, 1000.0f );
+                double size = UnityEngine.Random.Range( 0.1f, 5.0f );
 
-                if( Random.Range( 0, 3 ) == 0 )
+                if( UnityEngine.Random.Range( 0, 3 ) == 0 )
                 {
-                    size *= Random.Range( 10.0f, 15.0f );
+                    size = UnityEngine.Random.Range( 70f, 300f );
                 }
-                Main.bodies[i].DepositResource( new InventoryResource() { type = ResourceType.Water, amount = size }, 0 );
-                scale = Main.bodies[i].GetRadius();
-                Main.bodies[i].graphicsTransform.localScale = new Vector3( scale * 2, scale * 2, scale * 2 );
-                Main.bodies[i].collider.radius = scale + 4;
-                Main.bodies[i].inventory.AddResource( ResourceType.Iron, Random.Range( 5, 15 ) );
+                size *= Main.MASS_EARTH;
 
+                Main.bodies[i].DepositResource( new InventoryResource() { type = ResourceType.Water, amount = size / ResourceType.Water.GetDensity() }, 0 );
+
+                radius = Main.ToDisplayRadius( Main.bodies[i].GetRadius() );
+                Main.bodies[i].graphicsTransform.localScale = new Vector3( radius * 2, radius * 2, radius * 2 );
+                Main.bodies[i].collider.radius = radius + 0.5f;
             }
+            /*Main.bodies[1] = SpawnCelestialBody( "Earth" );
+            Main.bodies[1].SetOrbit( sun, 149597870700.0, 0 );
+            Debug.Log( "Earth" );
+            Main.bodies[1].DepositResource( new InventoryResource() { type = ResourceType.Water, amount = 5972000000000000000000000.0 / ResourceType.Water.GetDensity() }, 0 );
+
+            radius = Main.ToDisplayRadius( Main.bodies[1].GetRadius() );
+            Main.bodies[1].graphicsTransform.localScale = new Vector3( radius * 2, radius * 2, radius * 2 );
+            Main.bodies[1].collider.radius = radius + 0.5f;*/
 
             for( int i = 0; i < Main.bodies.Length; i++ )
             {

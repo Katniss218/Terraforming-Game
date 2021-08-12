@@ -13,30 +13,6 @@ namespace TerraformingGame
         public static CelestialBody[] bodies;
 
 
-        [SerializeField] private Gradient ___blackbody;
-        private static Gradient _blackbody;
-        public static Gradient blackbody
-        {
-            get
-            {
-                if( _blackbody == null )
-                {
-                    _blackbody = FindObjectOfType<Main>().___blackbody;
-                }
-                return _blackbody;
-            }
-        }
-
-        private const float BLACKBODY_LOOKUP_MAX = 29800.0f;
-
-        /// <summary>
-        /// Returns a blackbody radiation color given temperature in kelvins
-        /// </summary>
-        public static Color GetBlackbody( float temp )
-        {
-            return blackbody.Evaluate( Mathf.Clamp01( temp / BLACKBODY_LOOKUP_MAX ) );
-        }
-
         [SerializeField] private RectTransform _UILayerPanel = null;
         private static RectTransform ___UILayerPanel = null;
         public static RectTransform UILayerPanel
@@ -51,10 +27,57 @@ namespace TerraformingGame
             }
         }
 
-        // Start is called before the first frame update
-        void Start()
+
+        public const double G = 0.00000000006674; // valid when the calculations are done in kilograms and meters.
+
+        private const double REAL_TO_WORLD_POSITION_FACTOR = (1.0 / AU) * 10.0; // 10 units = 1 AU
+        private const double REAL_TO_WORLD_RADIUS_FACTOR = (1.0 / RADIUS_SUN); // 1 unit = 1 solar radius
+        private const double REAL_TO_WORLD_TIME_FACTOR = MONTH_TO_SECONDS; // 1 real second = 1 in-game month
+
+        public const double MASS_SUN = 1898000000000000000000000000000.0;
+        public const double MASS_JUPITER = 1898000000000000000000000000.0;
+        public const double MASS_EARTH = 5972000000000000000000000.0;
+
+        public const double RADIUS_SUN = 696340000.0;
+        public const double RADIUS_JUPITER = 69911000.0;
+        public const double RADIUS_EARTH = 6371000.0;
+
+        public const double AU = 149597870700.0;
+
+        public const double HOUR_TO_SECONDS = 3600.0;
+        public const double DAY_TO_SECONDS = HOUR_TO_SECONDS * 24;
+        public const double MONTH_TO_SECONDS = DAY_TO_SECONDS * 30;
+        public const double YEAR_TO_SECONDS = DAY_TO_SECONDS * 365;
+
+        // "gameplay" time is how many seconds pass in game per single real life second on default timewarp.
+        // radius and position converts from real values to display in viewport because the game doesn't use the same scale for positions and sizes.
+
+        /// <summary>
+        /// Converts real orbital distance into gameplay orbital distance.
+        /// </summary>
+        public static Vector3 ToDisplayPosition( Vector3 realPosition )
         {
-            Time.timeScale = 1;
+            return realPosition * (float)REAL_TO_WORLD_POSITION_FACTOR;
+        }
+
+        /// <summary>
+        /// Converts real celestial body radius into gameplay celestial body radius.
+        /// </summary>
+        public static float ToDisplayRadius( double realRadius )
+        {
+            if( realRadius < RADIUS_JUPITER * 5 )
+            {
+                return (float)(realRadius * REAL_TO_WORLD_RADIUS_FACTOR * 8);
+            }
+            return (float)(realRadius * REAL_TO_WORLD_RADIUS_FACTOR);
+        }
+
+        /// <summary>
+        /// Converts real timescale into gameplay timescale.
+        /// </summary>
+        public static float ToDisplayTime( double realSeconds )
+        {
+            return (float)(realSeconds * REAL_TO_WORLD_TIME_FACTOR);
         }
 
         private static void Pause()
@@ -71,7 +94,11 @@ namespace TerraformingGame
             isPaused = false;
         }
 
-        // Update is called once per frame
+        void Start()
+        {
+            Time.timeScale = 1;
+        }
+
         void Update()
         {
             if( Input.GetMouseButtonDown( 0 ) )

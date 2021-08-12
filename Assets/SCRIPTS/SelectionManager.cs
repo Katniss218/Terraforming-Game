@@ -17,6 +17,7 @@ namespace TerraformingGame
         {
             selectedBody = body;
             PlanetPanel.instance.planetName.text = body.gameObject.name;
+            PlanetPanel.instance.planetMass.text = (body.GetMass() / Main.MASS_EARTH).ToString();
             PlanetPanel.instance.Display( body.groundLayers[0] );
             PlanetPanel.instance.DisplayInventory();
 
@@ -35,6 +36,7 @@ namespace TerraformingGame
 
             selectedBody = null;
             PlanetPanel.instance.planetName.text = "";
+            PlanetPanel.instance.planetMass.text = "";
             PlanetPanel.instance.DisplayInventory();
         }
     }

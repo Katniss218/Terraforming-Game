@@ -4,9 +4,21 @@ namespace TerraformingGame
 {
     public class CelestialBody : MonoBehaviour
     {
-        public CelestialBody parentBody;
-        public double sma; // in meters
-        public double anomaly;
+        /// <summary>
+        /// Returns the parent body this body is orbiting around. Null for the root body.
+        /// </summary>
+        public CelestialBody parentBody
+        {
+            get
+            {
+                return this.orbit?.parentBody;
+            }
+        }
+
+        /// <summary>
+        /// Contains the orbit of this body.
+        /// </summary>
+        public Orbit orbit { get; private set; }
 
         public List<CelestialBodyLayer> groundLayers;
 
@@ -26,14 +38,15 @@ namespace TerraformingGame
 
         public void SetOrbit( CelestialBody parentBody, double sma, double anomaly )
         {
-            this.parentBody = parentBody;
-            this.sma = sma;
-            this.anomaly = anomaly;
+            this.orbit = new Orbit( sma, anomaly, parentBody );
         }
 
-        public float GetRadius()
+        /// <summary>
+        /// Returns the radius of this body (m)
+        /// </summary>
+        public double GetRadius()
         {
-            float acc = 0.0f;
+            double acc = 0.0f;
             for( int i = this.groundLayers.Count - 1; i >= 0; i-- )
             {
                 acc += this.groundLayers[i].GetDepth( acc );
@@ -41,9 +54,12 @@ namespace TerraformingGame
             return acc;
         }
 
-        public float GetMass()
+        /// <summary>
+        /// Returns the mass of this body (kg)
+        /// </summary>
+        public double GetMass()
         {
-            float acc = 0.0f;
+            double acc = 0.0f;
             for( int i = 0; i < this.groundLayers.Count; i++ )
             {
                 acc += groundLayers[i].GetMass();
@@ -56,8 +72,14 @@ namespace TerraformingGame
         /// </summary>
         public Inventory inventory;
 
+        /// <summary>
+        /// Contains the temperature of this body (K)
+        /// </summary>
         public float temperature { get; private set; }
 
+        /// <summary>
+        /// Sets the temperature (K)
+        /// </summary>
         public void SetTemperature( float temperature )
         {
             if( temperature < 0 )
@@ -69,23 +91,28 @@ namespace TerraformingGame
             this.temperature = temperature;
 
             MeshRenderer meshRenderer = this.graphicsTransform.gameObject.GetComponent<MeshRenderer>();
-            meshRenderer.material.SetColor( "_EmissionColor", Main.GetBlackbody( this.temperature ) );
+            meshRenderer.material.SetColor( "_EmissionColor", TemperatureUtils.GetBlackbodyColor( this.temperature ) );
 
             Light light = this.GetComponent<Light>();
             if( light != null )
             {
-                light.color = Main.GetBlackbody( this.temperature );
+                light.color = TemperatureUtils.GetBlackbodyColor( this.temperature );
             }
         }
 
-        // gravity (calculated from mass and radius)
-        // radius (calculated from layers)
-        // mass (calculated from layers)
+        /// <summary>
+        /// Returns the force of gravity at a given distance in respect to this body (N)
+        /// </summary>
+        public double GetGravity( double r )
+        {
+            return Main.G * this.GetMass() / (r * r);
+        }
+
         // magnetosphere (calculated from the molten metals at above some temperature)
 
         public void MineResource( InventoryResource resource, int layer )
         {
-            float amtMined = this.groundLayers[layer].RemoveResource( resource.type, resource.amount );
+            double amtMined = this.groundLayers[layer].RemoveResource( resource.type, resource.amount );
             this.inventory.AddResource( resource.type, amtMined );
 
             // if a ground layer has been completely mined out, remove it. The next layer takes its place and gets exposed.
@@ -97,7 +124,7 @@ namespace TerraformingGame
 
         public void DepositResource( InventoryResource resource, int layer )
         {
-            float amtDeposited = this.groundLayers[layer].AddResource( resource.type, resource.amount );
+            double amtDeposited = this.groundLayers[layer].AddResource( resource.type, resource.amount );
             this.inventory.RemoveResource( resource.type, amtDeposited );
         }
 
@@ -122,22 +149,16 @@ namespace TerraformingGame
 
             if( this.parentBody != null )
             {
-                float period = 2 * Mathf.PI * Mathf.Sqrt( (float)(sma * sma * sma * parentBody.GetMass()) );
+                // orbital period is is seconds per one revolution.
+                // angle speed is in degrees per second
+                double period = this.orbit.GetOrbitalPeriod();
+                double angleSpeed = 1.0 / period * 360.0;
 
-                float speed = 1 / period * 1000000;
+                this.orbit.anomaly += Main.ToDisplayTime( angleSpeed ) * Time.deltaTime * Time.timeScale;
 
-                anomaly += speed * Time.deltaTime * Time.timeScale;
-
-                float x = Mathf.Cos( Mathf.Deg2Rad * (float)anomaly );
-                float y = Mathf.Sin( Mathf.Deg2Rad * (float)anomaly );
-                x *= (float)sma;
-                y *= (float)sma;
-                x += parentBody.transform.position.x;
-                y += parentBody.transform.position.y;
-
-                this.transform.position = new Vector3( x, y );
+                this.transform.position = Main.ToDisplayPosition( orbit.GetWorldPosition() );
+                this.transform.position += this.parentBody.transform.position;
             }
-            // move the object on screen.
         }
 
 

@@ -6,6 +6,7 @@ namespace TerraformingGame.UI
     public class PlanetPanel : MonoBehaviour
     {
         public TMPro.TextMeshProUGUI planetName;
+        public TMPro.TextMeshProUGUI planetMass;
 
         public Transform layerContent;
 
