@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 namespace TerraformingGame
 {
@@ -67,37 +68,9 @@ namespace TerraformingGame
             return acc;
         }
 
-        /// <summary>
-        /// Contains mined resources
-        /// </summary>
-        public Inventory inventory;
-
-        /// <summary>
-        /// Contains the temperature of this body (K)
-        /// </summary>
-        public float temperature { get; private set; }
-
-        /// <summary>
-        /// Sets the temperature (K)
-        /// </summary>
-        public void SetTemperature( float temperature )
+        public double GetAlbedo()
         {
-            if( temperature < 0 )
-            {
-                Debug.LogWarning( "Tried setting temperature to below absolute 0" );
-                return;
-            }
-
-            this.temperature = temperature;
-
-            MeshRenderer meshRenderer = this.graphicsTransform.gameObject.GetComponent<MeshRenderer>();
-            meshRenderer.material.SetColor( "_EmissionColor", TemperatureUtils.GetBlackbodyColor( this.temperature ) );
-
-            Light light = this.GetComponent<Light>();
-            if( light != null )
-            {
-                light.color = TemperatureUtils.GetBlackbodyColor( this.temperature );
-            }
+            return 0.15; // TODO - at some point, albedo from surface layer.
         }
 
         /// <summary>
@@ -106,6 +79,84 @@ namespace TerraformingGame
         public double GetGravity( double r )
         {
             return Main.G * this.GetMass() / (r * r);
+        }
+
+        public double GetSurfaceArea()
+        {
+            double radius = this.GetRadius();
+            return 4.0 * Math.PI * radius * radius;
+        }
+
+        public double GetSolarConstant()
+        {
+            double temperature = this.orbit.parentBody.temperature;
+            double Ks = Main.SIGMA * (temperature * temperature * temperature * temperature);
+            double radioSq = (4.0 * Math.PI * this.orbit.parentBody.GetRadius()) / (4.0 * Math.PI * this.orbit.sma);
+            radioSq *= radioSq;
+            Ks = Ks * radioSq;
+
+            return Ks;
+        }
+
+        public double GetEnergyIntercepted()
+        {
+            double Ks = this.GetSolarConstant();
+            double radius = this.GetRadius();
+            return Ks * Math.PI * (radius * radius); 
+            // return [W] = Ks [W/m^2] * PI * r [m] ^2
+        }
+
+        public double GetEnergyAbsorbed( double energyIntercepted )
+        {
+            return energyIntercepted * (1 - this.GetAlbedo());
+        }
+
+        public double GetEnergyEmitted() // also known as luminosity.
+        {
+            return Main.SIGMA * (this.temperature * this.temperature * this.temperature * this.temperature) * this.GetSurfaceArea();
+        }
+
+        /// <summary>
+        /// Contains mined resources
+        /// </summary>
+        public Inventory inventory;
+
+        public bool isStar = false;
+
+        /// <summary>
+        /// Contains the temperature of this body (K)
+        /// </summary>
+        public double temperature { get; private set; }
+
+        public Action onTemperatureChanged { get; set; }
+
+        /// <summary>
+        /// Sets the temperature (K)
+        /// </summary>
+        public void SetTemperature( double temperature )
+        {
+            if( temperature < 0 )
+            {
+                Debug.LogWarning( "Tried setting temperature to below absolute 0" );
+                return;
+            }
+
+            this.temperature = temperature;
+            this.onTemperatureChanged?.Invoke();
+
+            for( int i = 0; i < this.graphicsTransform.childCount; i++ )
+            {
+                Transform child = this.graphicsTransform.GetChild( i );
+
+                MeshRenderer meshRenderer = child.GetComponent<MeshRenderer>();
+                meshRenderer.material.SetColor( "_EmissionColor", TemperatureUtils.GetBlackbodyColor( this.temperature ) );
+            }
+
+            Light light = this.GetComponent<Light>();
+            if( light != null )
+            {
+                light.color = TemperatureUtils.GetBlackbodyColor( this.temperature );
+            }
         }
 
         // magnetosphere (calculated from the molten metals at above some temperature)
@@ -142,10 +193,11 @@ namespace TerraformingGame
 
         void Update()
         {
-            // update temperature.
             // try to freeze/melt layers, etc.
             // update lifeforms.
             // update resources that are marked as being mined.
+
+            double energyIntercepted = 0.0;
 
             if( this.parentBody != null )
             {
@@ -154,13 +206,41 @@ namespace TerraformingGame
                 double period = this.orbit.GetOrbitalPeriod();
                 double angleSpeed = 1.0 / period * 360.0;
 
-                this.orbit.anomaly += Main.ToDisplayTime( angleSpeed ) * Time.deltaTime * Time.timeScale;
+                this.orbit.anomaly += angleSpeed * Main.ToDisplayTime( Time.deltaTime ) * Time.timeScale;
 
                 this.transform.position = Main.ToDisplayPosition( orbit.GetWorldPosition() );
                 this.transform.position += this.parentBody.transform.position;
+
+                // Heating, use the sun's heat energy.
+                energyIntercepted = this.GetEnergyIntercepted();
+            }
+
+            if( !this.isStar )
+            {
+                // Calculate heating
+                double absorbed = this.GetEnergyAbsorbed( energyIntercepted );
+                double emitted = this.GetEnergyEmitted();
+                double deltaEnergy = absorbed - emitted; // Joules per second.
+
+                deltaEnergy *= Main.ToDisplayTime( Time.timeScale ) * Time.deltaTime;
+                // heat capacity [Joule/Kelvin] = mass * specific heat * change in temperature.
+                // heat capacity 1Kelvin [Joule] = mass * specific heat
+                double heatCapacity = this.GetMass() * ResourceType.Iron.GetSpecificHeat(); // Joules, this is the amount of heat needed to raise temperature by 1 kelvin.
+
+                double deltaKelvins = 0;
+                if( heatCapacity > 1 ) // prevent division by 0, if heat capacity is 0.
+                {
+                    // deltaEnergy is in Joules per second, heat capacity is in joules
+                    deltaKelvins = deltaEnergy / heatCapacity; // calculate delta kelvins from the proportion.
+                }
+
+
+                this.SetTemperature( temperature + deltaKelvins );
             }
         }
 
+
+        // if the temperature is too high, you can move the planet. How?
 
         /// Layer flow rules
         /// 

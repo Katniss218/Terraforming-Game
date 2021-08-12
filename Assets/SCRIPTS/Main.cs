@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using TerraformingGame.UI;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -26,9 +25,23 @@ namespace TerraformingGame
                 return ___UILayerPanel;
             }
         }
+        
+        private static CameraController ___cameraController = null;
+        public static CameraController cameraController
+        {
+            get
+            {
+                if( ___cameraController == null )
+                {
+                    ___cameraController = FindObjectOfType<CameraController>();
+                }
+                return ___cameraController;
+            }
+        }
 
 
         public const double G = 0.00000000006674; // valid when the calculations are done in kilograms and meters.
+        public const double SIGMA = 0.00000005670374419; // stphan boltzmann constant
 
         private const double REAL_TO_WORLD_POSITION_FACTOR = (1.0 / AU) * 10.0; // 10 units = 1 AU
         private const double REAL_TO_WORLD_RADIUS_FACTOR = (1.0 / RADIUS_SUN); // 1 unit = 1 solar radius
@@ -123,20 +136,17 @@ namespace TerraformingGame
             }
             if( Input.GetKeyDown( KeyCode.Comma ) )
             {
-                Time.timeScale /= 2;
+                if( Time.timeScale > 0.25f )
+                {
+                    Time.timeScale /= 2;
+                }
             }
             if( Input.GetKeyDown( KeyCode.Period ) )
             {
-                Time.timeScale *= 2;
-            }
-
-            if( Input.GetKeyDown( KeyCode.Minus ) )
-            {
-                Camera.main.orthographicSize *= 2;
-            }
-            if( Input.GetKeyDown( KeyCode.Equals ) )
-            {
-                Camera.main.orthographicSize /= 2;
+                if( Time.timeScale < 16 )
+                {
+                    Time.timeScale *= 2;
+                }
             }
 
             if( Input.GetKey( KeyCode.Alpha1 ) )
@@ -166,7 +176,7 @@ namespace TerraformingGame
 
             if( Input.GetKeyDown( KeyCode.F5 ) )
             {
-                SetupSolarSystem.SpawnShipment( bodies[2], bodies[3] );
+                SetupSolarSystem.SpawnShipment( bodies[1], SelectionManager.GetSelectedBody() );
             }
         }
     }

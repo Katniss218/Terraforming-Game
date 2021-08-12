@@ -48,5 +48,19 @@ namespace TerraformingGame
             }
             throw new System.Exception( "Type was not specified." );
         }
+
+        // specific heat in joules/kg
+        public static float GetSpecificHeat( this ResourceType type )
+        {
+            switch( type )
+            {
+                // TODO - depends on temperature.
+                case ResourceType.Water:
+                    return 0.00418f;
+                case ResourceType.Iron:
+                    return 0.00045f;
+            }
+            throw new System.Exception( "Type was not specified." );
+        }
     }
 }

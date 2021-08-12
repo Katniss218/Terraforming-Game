@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace TerraformingGame.UI
@@ -6,7 +7,9 @@ namespace TerraformingGame.UI
     public class PlanetPanel : MonoBehaviour
     {
         public TMPro.TextMeshProUGUI planetName;
+        public TMPro.TextMeshProUGUI planetRadius;
         public TMPro.TextMeshProUGUI planetMass;
+        public TMPro.TextMeshProUGUI planetTemperature;
 
         public Transform layerContent;
 
@@ -49,6 +52,15 @@ namespace TerraformingGame.UI
             }
         }
 
+        public void DisplayTemperature()
+        {
+            CelestialBody body = SelectionManager.GetSelectedBody();
+            if( body != null )
+            {
+                instance.planetTemperature.text = "Temp: " + Math.Round( body.temperature, 1 ).ToString() + " K";
+            }
+        }
+
         public void DisplayInventory()
         {
             for( int i = 0; i < inventoryContent.childCount; i++ )
@@ -56,9 +68,9 @@ namespace TerraformingGame.UI
                 Destroy( inventoryContent.GetChild( i ).gameObject );
             }
 
-            if( SelectionManager.GetSelectedBody() != null )
+            CelestialBody body = SelectionManager.GetSelectedBody();
+            if( body != null )
             {
-                CelestialBody body = SelectionManager.GetSelectedBody();
                 for( int i = 0; i < body.inventory.resources.Count; i++ )
                 {
                     GameObject go = Instantiate( inventoryEntryPrefab, inventoryContent );

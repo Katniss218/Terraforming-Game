@@ -59,8 +59,10 @@
      <Compile Include="Assets\SCRIPTS\UI\SolarSystemPanelEntry.cs" />
      <Compile Include="Assets\SCRIPTS\CelestialBodies\CelestialBodyResource.cs" />
      <Compile Include="Assets\SCRIPTS\SelectionManager.cs" />
+     <Compile Include="Assets\SCRIPTS\TemperatureUtils.cs" />
      <Compile Include="Assets\SCRIPTS\StateOfMatter.cs" />
      <Compile Include="Assets\SCRIPTS\CelestialBodies\CelestialBody.cs" />
+     <Compile Include="Assets\SCRIPTS\Orbit.cs" />
      <Compile Include="Assets\SCRIPTS\UI\SolarSystemPanel.cs" />
      <Compile Include="Assets\SCRIPTS\SetupSolarSystem.cs" />
      <Compile Include="Assets\SCRIPTS\CelestialBodies\CelestialBodyLayer.cs" />
@@ -72,8 +74,7 @@
      <Compile Include="Assets\SCRIPTS\Inventory.cs" />
      <Compile Include="Assets\SCRIPTS\UI\InventoryEntry.cs" />
      <Compile Include="Assets\SCRIPTS\Shipment.cs" />
-     <Compile Include="Assets\SCRIPTS\Orbit.cs" />
-     <Compile Include="Assets\SCRIPTS\TemperatureUtils.cs" />
+     <Compile Include="Assets\SCRIPTS\CameraController.cs" />
      <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
      <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Overlay.shader" />
      <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap.shader" />

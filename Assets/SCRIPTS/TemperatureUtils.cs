@@ -45,6 +45,10 @@ namespace TerraformingGame
         /// </summary>
         public static Color GetBlackbodyColor( double temperature )
         {
+            if( temperature < 798.0 )
+            {
+                return Color.black;
+            }
             return blackbody.Evaluate( Mathf.Clamp01( (float)(temperature / BLACKBODY_LOOKUP_MAX) ) );
         }
     }

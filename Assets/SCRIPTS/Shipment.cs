@@ -36,7 +36,7 @@ namespace TerraformingGame
         {
             Vector3 dir = (destination.transform.position - this.transform.position).normalized;
 
-            this.transform.position += dir * 0.015f * Time.deltaTime * Time.timeScale;
+            this.transform.position += dir * 0.0000045f * Main.ToDisplayTime( Time.deltaTime ) * Time.timeScale;
 
             if( Vector3.Distance( this.transform.position, destination.transform.position ) <= Main.ToDisplayRadius( destination.GetRadius() ) )
             {
