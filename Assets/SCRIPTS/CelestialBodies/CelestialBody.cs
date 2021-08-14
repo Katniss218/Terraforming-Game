@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 namespace TerraformingGame
 {
+    [RequireComponent(typeof(CelestialBodyGraphics))]
     public class CelestialBody : MonoBehaviour
     {
         /// <summary>
@@ -25,7 +26,9 @@ namespace TerraformingGame
 
         public CelestialBodyLayer atmosphereLayer; // distinct layer due to vast differences in behaviour.
 
-        public Transform graphicsTransform = null;
+        public bool hasAtmosphere { get { return this.atmosphereLayer.resourceCount > 0; } }
+
+        public CelestialBodyGraphics gfx = null;
 
         public new SphereCollider collider = null;
 
@@ -37,10 +40,31 @@ namespace TerraformingGame
             }
         }
 
-        public void SetOrbit( CelestialBody parentBody, double sma, double anomaly )
+        public void SetOrbit( Orbit orbit )
         {
-            this.orbit = new Orbit( sma, anomaly, parentBody );
+            if( orbit == null )
+            {
+                this.orbit = null;
+                return;
+            }
+            this.orbit = new Orbit( orbit.sma, orbit.anomaly, orbit.parentBody );
         }
+
+        /// <summary>
+        /// Contains mined resources
+        /// </summary>
+        public Inventory inventory;
+
+        public bool isStar = false;
+
+        /// <summary>
+        /// Contains the temperature of this body (K)
+        /// </summary>
+        public double temperature { get; private set; }
+
+        public Action onTemperatureChanged { get; set; }
+
+        public Action onLayerChanged { get; set; }
 
         /// <summary>
         /// Returns the radius of this body (m)
@@ -98,7 +122,7 @@ namespace TerraformingGame
             return Ks;
         }
 
-        public double GetEnergyIntercepted()
+        public double GetEnergyIntercepted() // In Watts
         {
             double Ks = this.GetSolarConstant();
             double radius = this.GetRadius();
@@ -111,24 +135,10 @@ namespace TerraformingGame
             return energyIntercepted * (1 - this.GetAlbedo());
         }
 
-        public double GetEnergyEmitted() // also known as luminosity.
+        public double GetEnergyEmitted() // also known as luminosity. In Watts
         {
             return Main.SIGMA * (this.temperature * this.temperature * this.temperature * this.temperature) * this.GetSurfaceArea();
         }
-
-        /// <summary>
-        /// Contains mined resources
-        /// </summary>
-        public Inventory inventory;
-
-        public bool isStar = false;
-
-        /// <summary>
-        /// Contains the temperature of this body (K)
-        /// </summary>
-        public double temperature { get; private set; }
-
-        public Action onTemperatureChanged { get; set; }
 
         /// <summary>
         /// Sets the temperature (K)
@@ -144,25 +154,19 @@ namespace TerraformingGame
             this.temperature = temperature;
             this.onTemperatureChanged?.Invoke();
 
-            for( int i = 0; i < this.graphicsTransform.childCount; i++ )
-            {
-                Transform child = this.graphicsTransform.GetChild( i );
-
-                MeshRenderer meshRenderer = child.GetComponent<MeshRenderer>();
-                meshRenderer.material.SetColor( "_EmissionColor", TemperatureUtils.GetBlackbodyColor( this.temperature ) );
-            }
-
-            Light light = this.GetComponent<Light>();
-            if( light != null )
-            {
-                light.color = TemperatureUtils.GetBlackbodyColor( this.temperature );
-            }
+            this.gfx.SetTemperature( this.temperature );
         }
 
         // magnetosphere (calculated from the molten metals at above some temperature)
 
         public void MineResource( InventoryResource resource, int layer )
         {
+            if( this.groundLayers.Count == 0 )
+            {
+                Debug.LogWarning( "Tried mining from an object with 0 layers" );
+                return;
+            }
+
             double amtMined = this.groundLayers[layer].RemoveResource( resource.type, resource.amount );
             this.inventory.AddResource( resource.type, amtMined );
 
@@ -171,19 +175,48 @@ namespace TerraformingGame
             {
                 this.groundLayers.RemoveAt( layer );
             }
+
+            this.OnGroundLayerChanged();
+            this.onLayerChanged?.Invoke();
+
+            if( this.groundLayers.Count == 0 )
+            {
+                SetupSolarSystem.DeleteCelestialBody( this );
+            }
         }
 
         public void DepositResource( InventoryResource resource, int layer )
         {
+            if( this.groundLayers.Count == 0 )
+            {
+                this.groundLayers.Add( new CelestialBodyLayer() );
+            }
+
             double amtDeposited = this.groundLayers[layer].AddResource( resource.type, resource.amount );
             this.inventory.RemoveResource( resource.type, amtDeposited );
+
+            this.OnGroundLayerChanged();
+            this.onLayerChanged?.Invoke();
+        }
+
+        private void OnGroundLayerChanged()
+        {
+            double radius = this.GetRadius();
+
+            this.gfx.SetRadius( radius );
+
+            float visualRadius = Main.ToDisplayRadius( this.GetRadius() );
+            this.collider.radius = visualRadius + 0.5f;
         }
 
         void Awake()
         {
+            this.gfx = this.GetComponent<CelestialBodyGraphics>();
+
             this.inventory = new Inventory();
             this.groundLayers = new List<CelestialBodyLayer>( 1 );
             this.groundLayers.Add( new CelestialBodyLayer() );
+            this.atmosphereLayer = new CelestialBodyLayer();
         }
 
         void Start()
@@ -206,23 +239,25 @@ namespace TerraformingGame
                 double period = this.orbit.GetOrbitalPeriod();
                 double angleSpeed = 1.0 / period * 360.0;
 
-                this.orbit.anomaly += angleSpeed * Main.ToDisplayTime( Time.deltaTime ) * Time.timeScale;
+                this.orbit.anomaly += angleSpeed * Main.IRLToGameTime( Time.deltaTime ) * Time.timeScale;
 
                 this.transform.position = Main.ToDisplayPosition( orbit.GetWorldPosition() );
                 this.transform.position += this.parentBody.transform.position;
 
-                // Heating, use the sun's heat energy.
-                energyIntercepted = this.GetEnergyIntercepted();
+                energyIntercepted = TemperatureUtils.GetEnergyIntercepted( this.parentBody.temperature, this.parentBody.GetRadius(), this.orbit.sma, this.GetRadius() ); //this.GetEnergyIntercepted();
             }
 
             if( !this.isStar )
             {
                 // Calculate heating
-                double absorbed = this.GetEnergyAbsorbed( energyIntercepted );
-                double emitted = this.GetEnergyEmitted();
+                double absorbed = TemperatureUtils.GetEnergyAbsorbed( energyIntercepted, this.GetAlbedo() );
+                double emitted = TemperatureUtils.GetLuminosity( this.temperature, this.GetSurfaceArea() );
                 double deltaEnergy = absorbed - emitted; // Joules per second.
 
-                deltaEnergy *= Main.ToDisplayTime( Time.timeScale ) * Time.deltaTime;
+                // It destabilizes at high timewarp or very close to a hot star (i.e. when absorbed value is high). And I don't know why.
+
+                deltaEnergy *= Main.IRLToGameTime( Time.timeScale ) * Time.deltaTime / 100.0; // dividing by 100 helps with it destabilizing. Not sure how quick the heating should be.
+                
                 // heat capacity [Joule/Kelvin] = mass * specific heat * change in temperature.
                 // heat capacity 1Kelvin [Joule] = mass * specific heat
                 double heatCapacity = this.GetMass() * ResourceType.Iron.GetSpecificHeat(); // Joules, this is the amount of heat needed to raise temperature by 1 kelvin.
@@ -235,7 +270,7 @@ namespace TerraformingGame
                 }
 
 
-                this.SetTemperature( temperature + deltaKelvins );
+                this.SetTemperature( this.temperature + deltaKelvins );
             }
         }
 

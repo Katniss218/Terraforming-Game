@@ -9,7 +9,6 @@ namespace TerraformingGame.UI
         public GameObject entryPrefab;
 
         private static SolarSystemPanel _instance = null;
-
         public static SolarSystemPanel instance
         {
             get
@@ -24,8 +23,12 @@ namespace TerraformingGame.UI
 
         public List<SolarSystemPanelEntry> entries = new List<SolarSystemPanelEntry>();
 
-        public void AddBody( CelestialBody body, RenderTexture rt )
+
+
+        public void AddBody( CelestialBody body )
         {
+            RenderTexture rt = new RenderTexture( SetupSolarSystem.instance.solarSystemRT );
+
             GameObject gameObject = GameObject.Instantiate( entryPrefab, content );
 
             SolarSystemPanelEntry entry = gameObject.GetComponent<SolarSystemPanelEntry>();
@@ -40,7 +43,24 @@ namespace TerraformingGame.UI
 
             entry.SetRenderTexture( rt );
 
+            entry.renderCam = sspcc.GetComponent<Camera>();
+
             entries.Add( entry );
+        }
+
+        public void RemoveBody( CelestialBody body )
+        {
+            for( int i = 0; i < this.entries.Count; i++ )
+            {
+                if( this.entries[i].body == body )
+                {
+                    Destroy( this.entries[i].renderCam.gameObject );
+                    Destroy( this.entries[i].gameObject );
+
+                    this.entries.RemoveAt( i );
+                    return;
+                }
+            }
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 namespace TerraformingGame
 {
@@ -49,7 +50,37 @@ namespace TerraformingGame
             {
                 return Color.black;
             }
-            return blackbody.Evaluate( Mathf.Clamp01( (float)(temperature / BLACKBODY_LOOKUP_MAX) ) );
+            Color color = blackbody.Evaluate( Mathf.Clamp01( (float)(temperature / BLACKBODY_LOOKUP_MAX) ) );
+            color *= Mathf.Lerp( 1, 5, (float)(temperature / BLACKBODY_LOOKUP_MAX) );
+            return color;
         }
+
+        public static double GetSolarConstant( double starTemperature, double starRadius, double planetSma )
+        {
+            double radioSq = (4.0 * Math.PI * starRadius) / (4.0 * Math.PI * planetSma);
+            radioSq *= radioSq;
+            double Ks = Main.SIGMA * (starTemperature * starTemperature * starTemperature * starTemperature) * radioSq;
+
+            return Ks;
+        }
+
+        public static double GetLuminosity( double temperature, double surfaceArea ) // total energy emitted by a blackbody, Watts
+        {
+            return Main.SIGMA * (temperature * temperature * temperature * temperature) * surfaceArea;
+        }
+
+        // "Energy Intercepted" is the amount of energy potentially available to a body, if it was perfectly absorbant.
+        public static double GetEnergyIntercepted( double starTemperature, double starRadius, double planetSma, double planetRadius ) // Watts
+        {
+            double Ks = GetSolarConstant( starTemperature, starRadius, planetSma );
+            return Ks * Math.PI * (planetRadius * planetRadius);
+            // return [W] = Ks [W/m^2] * PI * r [m] ^2
+        }
+
+        public static double GetEnergyAbsorbed( double energyIntercepted, double albedo )
+        {
+            return energyIntercepted * (1.0 - albedo);
+        }
+
     }
 }

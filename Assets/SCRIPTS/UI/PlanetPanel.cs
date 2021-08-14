@@ -48,7 +48,7 @@ namespace TerraformingGame.UI
                 InventoryEntry entry = go.GetComponent<InventoryEntry>();
                 layerEntries.Add( entry );
 
-                entry.text.text = resources[i].amount.ToString();
+                entry.text.text = resources[i].ToString();
             }
         }
 
@@ -77,7 +77,7 @@ namespace TerraformingGame.UI
                     InventoryEntry entry = go.GetComponent<InventoryEntry>();
                     inventoryEntries.Add( entry );
 
-                    entry.text.text = body.inventory.resources[i].amount.ToString();
+                    entry.text.text = body.inventory.resources[i].ToString();
                 }
             }
         }

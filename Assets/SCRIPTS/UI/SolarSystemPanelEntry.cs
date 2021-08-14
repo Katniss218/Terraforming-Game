@@ -9,7 +9,8 @@ namespace TerraformingGame.UI
         public CelestialBody body;
 
         [SerializeField] private RawImage rawImage;
-
+        public Camera renderCam;
+        
         public void OnClick()
         {
             SelectionManager.Select( body );

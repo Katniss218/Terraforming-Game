@@ -13,5 +13,10 @@ namespace TerraformingGame
         public float density { get { return this.type.GetDensity(); } }
 
         public StateOfMatter state;
+
+        public override string ToString()
+        {
+            return this.type.GetDisplayName() + " - " + this.amount.ToString();
+        }
     }
 }

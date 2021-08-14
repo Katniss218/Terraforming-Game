@@ -9,7 +9,7 @@ namespace TerraformingGame
         private static bool isPaused = false;
         private static float pausedTimeScale;
 
-        public static CelestialBody[] bodies;
+        public static List<CelestialBody> bodies = new List<CelestialBody>();
 
 
         [SerializeField] private RectTransform _UILayerPanel = null;
@@ -86,11 +86,11 @@ namespace TerraformingGame
         }
 
         /// <summary>
-        /// Converts real timescale into gameplay timescale.
+        /// Converts IRL timescale into real game timescale.
         /// </summary>
-        public static float ToDisplayTime( double realSeconds )
+        public static double IRLToGameTime( double realSeconds )
         {
-            return (float)(realSeconds * REAL_TO_WORLD_TIME_FACTOR);
+            return realSeconds * REAL_TO_WORLD_TIME_FACTOR;
         }
 
         private static void Pause()
@@ -143,7 +143,7 @@ namespace TerraformingGame
             }
             if( Input.GetKeyDown( KeyCode.Period ) )
             {
-                if( Time.timeScale < 16 )
+                if( Time.timeScale < 8 )
                 {
                     Time.timeScale *= 2;
                 }
@@ -177,6 +177,14 @@ namespace TerraformingGame
             if( Input.GetKeyDown( KeyCode.F5 ) )
             {
                 SetupSolarSystem.SpawnShipment( bodies[1], SelectionManager.GetSelectedBody() );
+            }
+            if( Input.GetKeyDown( KeyCode.F6 ) )
+            {
+                SelectionManager.GetSelectedBody().DepositResource( new InventoryResource() { amount = 5000000000000000000000.0, type = ResourceType.Water }, 0 );
+            }
+            if( Input.GetKeyDown( KeyCode.F7 ) )
+            {
+                SelectionManager.GetSelectedBody().MineResource( new InventoryResource() { amount = 5000000000000000000000.0, type = ResourceType.Water }, 0 );
             }
         }
     }

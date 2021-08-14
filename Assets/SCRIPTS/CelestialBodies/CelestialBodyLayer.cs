@@ -10,9 +10,6 @@ namespace TerraformingGame
 
         public int resourceCount { get { return this.resources.Count; } }
 
-        // special resources (type, amount, state), array
-        // bulk resource (type, amount, state)
-
         // temperature in kelvins
         private float temperature;
         private float averageDensity;
