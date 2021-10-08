@@ -44,7 +44,7 @@ namespace TerraformingGame
                 case ResourceType.Water:
                     return 273;
                 case ResourceType.Silicates:
-                    return 1273;
+                    return 1373;
                 case ResourceType.Iron:
                     return 1811;
             }
